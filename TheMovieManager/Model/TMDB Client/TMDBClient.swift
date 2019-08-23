@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import UIKit
 
 class TMDBClient {
     
@@ -23,19 +24,21 @@ class TMDBClient {
         static let apiKeyParam = "?api_key=\(TMDBClient.apiKey)"
         
         case getWatchlist
+        case getFavorites
         case getRequestToken
-        case login
         case createSessionId
         case webAuth
+        case login
         case logout
         
         var stringValue: String {
             switch self {
             case .getWatchlist: return Endpoints.base + "/account/\(Auth.accountId)/watchlist/movies" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
+            case .getFavorites: return Endpoints.base + "/account/\(Auth.accountId)/favorite/movies" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
             case .getRequestToken: return Endpoints.base + "/authentication/token/new" + Endpoints.apiKeyParam
-            case .login: return Endpoints.base + "/authentication/token/validate_with_login" + Endpoints.apiKeyParam
             case .createSessionId: return Endpoints.base + "/authentication/session/new" + Endpoints.apiKeyParam
             case .webAuth: return "https://www.themoviedb.org/authenticate/" + Auth.requestToken + "?redirect_to=moviemanager:authenticate"
+            case .login: return Endpoints.base + "/authentication/token/validate_with_login" + Endpoints.apiKeyParam
             case .logout: return Endpoints.base + "/authentication/session" + Endpoints.apiKeyParam
             }
         }
@@ -56,6 +59,15 @@ class TMDBClient {
 
     }
     
+    class func getFavorites(completionHandler: @escaping ([Movie], Error?) -> Void){
+        taskForGETRequest(url: Endpoints.getFavorites.url, response: MovieResults.self) { (response, error) in
+            if let response = response{
+                completionHandler(response.results,nil)
+            }else{
+                completionHandler([],error)
+            }
+        }
+    }
     class func getRequestToken(completionHandler: @escaping (Bool, Error?) -> Void){
         
         
@@ -122,6 +134,8 @@ class TMDBClient {
         dataTask.resume()
     }
     
+    
+    
     class func taskForGETRequest<ResponseType: Decodable>(url:URL, response: ResponseType.Type, completionHandler: @escaping (ResponseType?, Error?) -> Void) {
         let dataTask = URLSession.shared.dataTask(with: url) { (data, response, error) in
             guard let data = data else{
@@ -160,7 +174,6 @@ class TMDBClient {
                 DispatchQueue.main.async {
                     completion(nil, error)
                 }
-                print(error)
                 return
             }
             do{
