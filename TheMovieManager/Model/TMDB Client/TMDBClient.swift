@@ -63,6 +63,7 @@ class TMDBClient {
         taskForGETRequest(url: Endpoints.getFavorites.url, response: MovieResults.self) { (response, error) in
             if let response = response{
                 completionHandler(response.results,nil)
+                
             }else{
                 completionHandler([],error)
             }
@@ -77,9 +78,9 @@ class TMDBClient {
                 completionHandler(false,error)
                 return
             }
-            let decoder = JSONDecoder()
             //parse json
             do{
+                let decoder = JSONDecoder()
                 let tokenResponse = try decoder.decode(RequestTokenResponse.self, from: data)
                 Auth.requestToken = tokenResponse.requestToken
                 completionHandler(true,nil)
@@ -93,7 +94,9 @@ class TMDBClient {
     }
     //MARK: handles the login post request
     class func login(username: String, password: String, completion: @escaping (Bool, Error?) -> Void){
+        
         let body = LoginRequest(username: username, password: password, requestToken: Auth.requestToken)
+        
         taskForPOSTRequest(url: Endpoints.login.url, response: RequestTokenResponse.self, body: body ) { (response, error) in
             if let response = response {
                 Auth.requestToken = response.requestToken
