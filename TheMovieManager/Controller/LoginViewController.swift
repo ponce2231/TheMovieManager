@@ -9,7 +9,7 @@
 import UIKit
 
 class LoginViewController: UIViewController {
-    
+    //MARK: OUTLETS
     @IBOutlet weak var emailTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
     @IBOutlet weak var loginButton: UIButton!
@@ -21,7 +21,7 @@ class LoginViewController: UIViewController {
         emailTextField.text = ""
         passwordTextField.text = ""
     }
-    
+    //MARK: ACTIONS
     @IBAction func loginTapped(_ sender: UIButton) {
         TMDBClient.getRequestToken(completionHandler: handleResponseToken(success:error:))
     }
@@ -34,27 +34,24 @@ class LoginViewController: UIViewController {
             }
         }
     }
+    //MARK: HANDLERS
     func handleResponseToken(success: Bool, error: Error?) {
         print(TMDBClient.Auth.requestToken)
         if success{
                 TMDBClient.login(username: self.emailTextField.text ?? "", password: self.passwordTextField.text ?? "", completion: self.handleLoginResponse(success:error:))
         }
-        
     }
+    
     func handleLoginResponse(success:Bool, error: Error?){
-        print(TMDBClient.Auth.requestToken)
         if success{
             TMDBClient.sessionResponse(completionHandler: handleSessionResponse(success:error:))
         }
-        
     }
     
     func handleSessionResponse(success:Bool, error:Error?) {
         if success{
                 self.performSegue(withIdentifier: "completeLogin", sender: nil)
         }
-        
     }
 
-    
 }

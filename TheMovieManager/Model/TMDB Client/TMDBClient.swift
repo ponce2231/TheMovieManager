@@ -18,7 +18,7 @@ class TMDBClient {
         static var requestToken = ""
         static var sessionId = ""
     }
-    
+    // handles the url and the api key
     enum Endpoints {
         static let base = "https://api.themoviedb.org/3"
         static let apiKeyParam = "?api_key=\(TMDBClient.apiKey)"
@@ -30,8 +30,8 @@ class TMDBClient {
         case webAuth
         case login
         case logout
-        
-        var stringValue: String {
+        //URL For endpoints
+        var urlValue: String {
             switch self {
             case .getWatchlist: return Endpoints.base + "/account/\(Auth.accountId)/watchlist/movies" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
             case .getFavorites: return Endpoints.base + "/account/\(Auth.accountId)/favorite/movies" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
@@ -42,23 +42,23 @@ class TMDBClient {
             case .logout: return Endpoints.base + "/authentication/session" + Endpoints.apiKeyParam
             }
         }
-        
+        // computable variable
         var url: URL {
-            return URL(string: stringValue)!
+            return URL(string: urlValue)!
         }
     }
     
+    //MARK: gets the watchlist from the movies array
     class func getWatchlist(completion: @escaping ([Movie], Error?) -> Void) {
         taskForGETRequest(url: Endpoints.getWatchlist.url, response: MovieResults.self) { (response, error) in
             if let response = response {
                 completion(response.results, nil)
             }else{
                 completion([],error)
-            }
-        }
+            }        }
 
     }
-    
+    //gets the favorites from the movie array
     class func getFavorites(completionHandler: @escaping ([Movie], Error?) -> Void){
         taskForGETRequest(url: Endpoints.getFavorites.url, response: MovieResults.self) { (response, error) in
             if let response = response{
@@ -68,15 +68,17 @@ class TMDBClient {
             }
         }
     }
+    // MARK: gets the request token
     class func getRequestToken(completionHandler: @escaping (Bool, Error?) -> Void){
         
-        
+        //preparing session for parsing
         let dataTask = URLSession.shared.dataTask(with: Endpoints.getRequestToken.url) { (data, response, error) in
             guard let data = data else{
                 completionHandler(false,error)
                 return
             }
             let decoder = JSONDecoder()
+            //parse json
             do{
                 let tokenResponse = try decoder.decode(RequestTokenResponse.self, from: data)
                 Auth.requestToken = tokenResponse.requestToken
@@ -87,10 +89,9 @@ class TMDBClient {
                 print(error)
             }
         }
-        
         dataTask.resume()
     }
-    
+    //MARK: handles the login post request
     class func login(username: String, password: String, completion: @escaping (Bool, Error?) -> Void){
         let body = LoginRequest(username: username, password: password, requestToken: Auth.requestToken)
         taskForPOSTRequest(url: Endpoints.login.url, response: RequestTokenResponse.self, body: body ) { (response, error) in
@@ -102,7 +103,7 @@ class TMDBClient {
             }
         }
     }
-    
+    //MARK: handles the session response post request
     class func sessionResponse(completionHandler: @escaping (Bool, Error?) -> Void){
         let body = PostSession(requestToken: Auth.requestToken)
         taskForPOSTRequest(url: Endpoints.createSessionId.url, response: SessionResponse.self, body: body) { (response, error) in
@@ -114,12 +115,11 @@ class TMDBClient {
             }
         }
     }
-    
+    //MARK: handles the logout/delete request
    class func logout(completionHandler: @escaping () -> Void) {
         var request = URLRequest(url:Endpoints.logout.url)
         
         request.httpMethod = "DELETE"
-        
         
         let body = LogoutRequest(sessionId: Auth.sessionId)
         
@@ -133,10 +133,9 @@ class TMDBClient {
         }
         dataTask.resume()
     }
-    
-    
-    
+    //MARK: handles the get request and parse the response
     class func taskForGETRequest<ResponseType: Decodable>(url:URL, response: ResponseType.Type, completionHandler: @escaping (ResponseType?, Error?) -> Void) {
+        //preparing session for parsing
         let dataTask = URLSession.shared.dataTask(with: url) { (data, response, error) in
             guard let data = data else{
                 DispatchQueue.main.async {
@@ -144,8 +143,9 @@ class TMDBClient {
                 }
                 return
             }
-            let decoder = JSONDecoder()
+             //parse json
             do{
+                let decoder = JSONDecoder()
                 let responseObject = try decoder.decode(ResponseType.self, from: data)
                 DispatchQueue.main.async {
                     completionHandler(responseObject,nil)
@@ -160,14 +160,14 @@ class TMDBClient {
         
         dataTask.resume()
     }
-    
-    class func taskForPOSTRequest<RequestType: Encodable, ResponseType: Decodable>(url: URL, response: ResponseType.Type, body: RequestType, completion: @escaping (ResponseType?, Error?) -> Void){
+    // handles post request and parse the response
+    class func taskForPOSTRequest<RequestType: Encodable, ResponseType: Decodable>(url: URL, response: ResponseType.Type,
+                                            body: RequestType, completion: @escaping (ResponseType?, Error?) -> Void){
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = try! JSONEncoder().encode(body)
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
 
         let dataTask =  URLSession.shared.dataTask(with: request) { (data, response, error) in
             guard let data = data else{
@@ -176,6 +176,7 @@ class TMDBClient {
                 }
                 return
             }
+             //parse json
             do{
                 let decoder = JSONDecoder()
                 let responseObject = try decoder.decode(ResponseType.self, from: data)
