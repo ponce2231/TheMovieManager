@@ -30,6 +30,7 @@ class TMDBClient {
         case webAuth
         case login
         case logout
+        case search(String)
         //URL For endpoints
         var urlValue: String {
             switch self {
@@ -40,6 +41,7 @@ class TMDBClient {
             case .webAuth: return "https://www.themoviedb.org/authenticate/" + Auth.requestToken + "?redirect_to=themoviemanager:authenticate"
             case .login: return Endpoints.base + "/authentication/token/validate_with_login" + Endpoints.apiKeyParam
             case .logout: return Endpoints.base + "/authentication/session" + Endpoints.apiKeyParam
+            case .search(let query): return Endpoints.base + "/search/movie" + Endpoints.apiKeyParam + "&query=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
             }
         }
         // computable variable
@@ -75,7 +77,9 @@ class TMDBClient {
         //preparing session for parsing
         let dataTask = URLSession.shared.dataTask(with: Endpoints.getRequestToken.url) { (data, response, error) in
             guard let data = data else{
-                completionHandler(false,error)
+                DispatchQueue.main.async {
+                    completionHandler(false,error)
+                }
                 return
             }
             //parse json
@@ -83,10 +87,15 @@ class TMDBClient {
                 let decoder = JSONDecoder()
                 let tokenResponse = try decoder.decode(RequestTokenResponse.self, from: data)
                 Auth.requestToken = tokenResponse.requestToken
-                completionHandler(true,nil)
+                DispatchQueue.main.async {
+                    completionHandler(true,nil)
+                }
+                
                 
             }catch{
-                completionHandler(false,error)
+                DispatchQueue.main.async {
+                    completionHandler(false,error)
+                }
                 print(error)
             }
         }
@@ -196,4 +205,15 @@ class TMDBClient {
         }
         dataTask.resume()
     }
+    
+    class func search(query:String, completionHandler: @escaping ([Movie],Error?) -> Void){
+        taskForGETRequest(url: Endpoints.search(query).url, response: MovieResults.self) { (response, error) in
+            if let response = response{
+                completionHandler(response.results, nil)
+            }else{
+                completionHandler([],error)
+            }
+        }
+    }
+    
 }
