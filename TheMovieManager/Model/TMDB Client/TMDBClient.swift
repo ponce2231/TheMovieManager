@@ -31,6 +31,7 @@ class TMDBClient {
         case login
         case logout
         case search(String)
+        case markWatchlist
         //URL For endpoints
         var urlValue: String {
             switch self {
@@ -42,6 +43,7 @@ class TMDBClient {
             case .login: return Endpoints.base + "/authentication/token/validate_with_login" + Endpoints.apiKeyParam
             case .logout: return Endpoints.base + "/authentication/session" + Endpoints.apiKeyParam
             case .search(let query): return Endpoints.base + "/search/movie" + Endpoints.apiKeyParam + "&query=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+            case .markWatchlist: return Endpoints.base + "/account/\(Auth.accountId)/watchlist" + Endpoints.apiKeyParam
             }
         }
         // computable variable
@@ -212,6 +214,19 @@ class TMDBClient {
                 completionHandler(response.results, nil)
             }else{
                 completionHandler([],error)
+            }
+        }
+    }
+    //MARK: handles the send request to post on the watchlist
+    class func markWatchlist(movieId: Int, watchlist: Bool, completionHandler: @escaping (Bool, Error?) -> Void){
+        let body = MarkWatchlist(mediaType: "movie", mediaId: movieId, watchlist: watchlist)
+        
+        taskForPOSTRequest(url: Endpoints.markWatchlist.url, response: TMDBResponse.self, body: body) { (response, error) in
+            if let response = response {
+                completionHandler(response.statusCode == 1 || response.statusCode == 12 || response.statusCode == 13, nil)
+                print(response)
+            }else{
+                completionHandler(false, error)
             }
         }
     }
