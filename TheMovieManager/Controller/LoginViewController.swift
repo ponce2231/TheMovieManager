@@ -9,6 +9,7 @@
 import UIKit
 
 class LoginViewController: UIViewController {
+    
     //MARK: OUTLETS
     @IBOutlet weak var emailTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
@@ -21,6 +22,7 @@ class LoginViewController: UIViewController {
         emailTextField.text = ""
         passwordTextField.text = ""
     }
+    
     //MARK: ACTIONS
     @IBAction func loginTapped(_ sender: UIButton) {
         TMDBClient.getRequestToken(completionHandler: handleResponseToken(success:error:))
@@ -29,21 +31,16 @@ class LoginViewController: UIViewController {
     @IBAction func loginViaWebsiteTapped() {
         TMDBClient.getRequestToken { (success, error) in
             if success {
-                
                     UIApplication.shared.open(TMDBClient.Endpoints.webAuth.url, options: [:], completionHandler: nil)
-                
             }
         }
     }
+    
     //MARK: HANDLERS
     func handleResponseToken(success: Bool, error: Error?) {
         
         if success{
-            
-            
                 TMDBClient.login(username: self.emailTextField.text ?? "", password: self.passwordTextField.text ?? "", completion: self.handleLoginResponse(success:error:))
-            
-
         }
     }
     
