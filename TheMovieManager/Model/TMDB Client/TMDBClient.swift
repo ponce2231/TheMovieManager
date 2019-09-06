@@ -21,6 +21,7 @@ class TMDBClient {
     // handles the url and the api key
     enum Endpoints {
         static let base = "https://api.themoviedb.org/3"
+        static let baseImage = "https://image.tmdb.org/t/p/w500"
         static let apiKeyParam = "?api_key=\(TMDBClient.apiKey)"
         
         case getWatchlist
@@ -33,20 +34,22 @@ class TMDBClient {
         case search(String)
         case markWatchlist
         case markFavorites
-        
+        case posterImageURL(String)
         //URL For endpoints
         var urlValue: String {
             switch self {
-            case .getWatchlist: return Endpoints.base + "/account/\(Auth.accountId)/watchlist/movies" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
-            case .getFavorites: return Endpoints.base + "/account/\(Auth.accountId)/favorite/movies" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
-            case .getRequestToken: return Endpoints.base + "/authentication/token/new" + Endpoints.apiKeyParam
-            case .createSessionId: return Endpoints.base + "/authentication/session/new" + Endpoints.apiKeyParam
-            case .webAuth: return "https://www.themoviedb.org/authenticate/" + Auth.requestToken + "?redirect_to=themoviemanager:authenticate"
-            case .login: return Endpoints.base + "/authentication/token/validate_with_login" + Endpoints.apiKeyParam
-            case .logout: return Endpoints.base + "/authentication/session" + Endpoints.apiKeyParam
-            case .search(let query): return Endpoints.base + "/search/movie" + Endpoints.apiKeyParam + "&query=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
-            case .markWatchlist: return Endpoints.base + "/account/\(Auth.accountId)/watchlist" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
-            case .markFavorites: return Endpoints.base + "/account/\(Auth.accountId)/favorite" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
+                case .getWatchlist: return Endpoints.base + "/account/\(Auth.accountId)/watchlist/movies" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
+                case .getFavorites: return Endpoints.base + "/account/\(Auth.accountId)/favorite/movies" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
+                case .getRequestToken: return Endpoints.base + "/authentication/token/new" + Endpoints.apiKeyParam
+                case .createSessionId: return Endpoints.base + "/authentication/session/new" + Endpoints.apiKeyParam
+                case .webAuth: return "https://www.themoviedb.org/authenticate/" + Auth.requestToken + "?redirect_to=themoviemanager:authenticate"
+                case .login: return Endpoints.base + "/authentication/token/validate_with_login" + Endpoints.apiKeyParam
+                case .logout: return Endpoints.base + "/authentication/session" + Endpoints.apiKeyParam
+                case .search(let query): return Endpoints.base + "/search/movie" + Endpoints.apiKeyParam + "&query=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+                case .markWatchlist: return Endpoints.base + "/account/\(Auth.accountId)/watchlist" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
+                case .markFavorites: return Endpoints.base + "/account/\(Auth.accountId)/favorite" + Endpoints.apiKeyParam + "&session_id=\(Auth.sessionId)"
+                case .posterImageURL(let posterPath): return Endpoints.baseImage + posterPath
+                
             }
         }
         // computable variable
@@ -245,6 +248,17 @@ class TMDBClient {
                 completionHandler(false,error)
             }
         }
+    }
+    
+    class func downloadPosterImage(posterPath:String, completionHandler: @escaping (Data?,Error?) -> Void){
+        let dataTask = URLSession.shared.dataTask(with: Endpoints.posterImageURL(posterPath).url) { (data, response, error) in
+            DispatchQueue.main.async {
+                completionHandler(data,error)
+            }
+            
+        }
+        dataTask.resume()
+        
     }
     
 }
