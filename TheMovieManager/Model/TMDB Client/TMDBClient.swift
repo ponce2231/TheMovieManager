@@ -154,7 +154,7 @@ class TMDBClient {
         dataTask.resume()
     }
     //MARK: handles the get request and parse the response
-    class func taskForGETRequest<ResponseType: Decodable>(url:URL, response: ResponseType.Type, completionHandler: @escaping (ResponseType?, Error?) -> Void) ->  URLSessionTask{
+   @discardableResult class func taskForGETRequest<ResponseType: Decodable>(url:URL, response: ResponseType.Type, completionHandler: @escaping (ResponseType?, Error?) -> Void) ->  URLSessionTask{
         //preparing session for parsing
         let dataTask = URLSession.shared.dataTask(with: url) {(data, response, error) in
             guard let data = data else{
