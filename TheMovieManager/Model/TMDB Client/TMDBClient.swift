@@ -154,9 +154,9 @@ class TMDBClient {
         dataTask.resume()
     }
     //MARK: handles the get request and parse the response
-    class func taskForGETRequest<ResponseType: Decodable>(url:URL, response: ResponseType.Type, completionHandler: @escaping (ResponseType?, Error?) -> Void) {
+    class func taskForGETRequest<ResponseType: Decodable>(url:URL, response: ResponseType.Type, completionHandler: @escaping (ResponseType?, Error?) -> Void) ->  URLSessionTask{
         //preparing session for parsing
-        let dataTask = URLSession.shared.dataTask(with: url) { (data, response, error) in
+        let dataTask = URLSession.shared.dataTask(with: url) {(data, response, error) in
             guard let data = data else{
                 DispatchQueue.main.async {
                     completionHandler(nil,error)
@@ -164,21 +164,30 @@ class TMDBClient {
                 return
             }
              //parse json
+            let decoder = JSONDecoder()
             do{
-                let decoder = JSONDecoder()
+                
                 let responseObject = try decoder.decode(ResponseType.self, from: data)
                 DispatchQueue.main.async {
                     completionHandler(responseObject,nil)
                 }
             }catch{
-                DispatchQueue.main.async {
-                    completionHandler(nil,error)
+                do{
+                    let errorResponse = try decoder.decode(TMDBResponse.self, from: data)
+                    DispatchQueue.main.async {
+                        completionHandler(nil, errorResponse)
+                    }
+                    
+                }catch{
+                    DispatchQueue.main.async {
+                        completionHandler(nil,error)
+                    }
                 }
-                print(error)
             }
         }
         
         dataTask.resume()
+        return dataTask
     }
     // handles post request and parse the response
     class func taskForPOSTRequest<RequestType: Encodable, ResponseType: Decodable>(url: URL, response: ResponseType.Type,
@@ -197,31 +206,42 @@ class TMDBClient {
                 return
             }
              //parse json
+            let decoder = JSONDecoder()
             do{
-                let decoder = JSONDecoder()
+                
                 let responseObject = try decoder.decode(ResponseType.self, from: data)
                 DispatchQueue.main.async {
                     completion(responseObject,nil)
                 }
                 
             }catch{
-                DispatchQueue.main.async {
-                    completion(nil, error)
+                do{
+                    let errorResponse = try decoder.decode(TMDBResponse.self, from: data)
+                    DispatchQueue.main.async {
+                        completion(nil,errorResponse)
+                    }
+                }catch{
+                    DispatchQueue.main.async {
+                        completion(nil, error)
+                    }
                 }
+                
+              
                 print(error)
             }
         }
         dataTask.resume()
     }
     
-    class func search(query:String, completionHandler: @escaping ([Movie],Error?) -> Void){
-        taskForGETRequest(url: Endpoints.search(query).url, response: MovieResults.self) { (response, error) in
+    class func search(query:String, completionHandler: @escaping ([Movie],Error?) -> Void) -> URLSessionTask{
+       let task = taskForGETRequest(url: Endpoints.search(query).url, response: MovieResults.self) { (response, error) in
             if let response = response {
                 completionHandler(response.results, nil)
             }else{
                 completionHandler([],error)
             }
         }
+        return task
     }
     
     //MARK: handles the send request to post on the watchlist
